@@ -1,4 +1,4 @@
-# 3-Tier App on Azure
+# 3-Tier App 
 
 A classic web / application / data topology, ready to plan and apply.
 
