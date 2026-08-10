@@ -1,0 +1,37 @@
+# Production overrides. Apply with:
+#   terraform apply -var-file=environments/prod.tfvars
+
+subscription_id = "00000000-0000-0000-0000-000000000000"
+tenant_id       = "00000000-0000-0000-0000-000000000000"
+
+project_name = "synfra-app"
+environment  = "prod"
+location     = "eastus"
+
+vnet_address_space    = ["10.10.0.0/16"]
+gateway_subnet_prefix = "10.10.0.0/24"
+app_subnet_prefix     = "10.10.10.0/24"
+data_subnet_prefix    = "10.10.20.0/24"
+
+# WAF_v2 adds the managed OWASP rule set in front of the application.
+gateway_sku_name = "WAF_v2"
+gateway_capacity = 3
+
+ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAA... you@example.com"
+
+app_vm_sku             = "Standard_D2s_v5"
+app_instance_count     = 3
+app_min_instance_count = 3
+app_max_instance_count = 12
+
+# General Purpose SKU — Burstable does not support zone-redundant HA.
+postgres_sku_name              = "GP_Standard_D2s_v3"
+postgres_storage_mb            = 131072
+postgres_backup_retention_days = 35
+postgres_high_availability     = true
+
+tags = {
+  Owner      = "platform-team"
+  CostCenter = "engineering"
+  Compliance = "pci"
+}

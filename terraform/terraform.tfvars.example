@@ -1,0 +1,44 @@
+# Copy to terraform.tfvars and adjust. terraform.tfvars is gitignored and is
+# excluded from VCS pushes, so it never lands in a pull request.
+
+# Required. Find them with: az account show --query "{sub:id, tenant:tenantId}"
+subscription_id = "00000000-0000-0000-0000-000000000000"
+tenant_id       = "00000000-0000-0000-0000-000000000000"
+
+project_name = "synfra-app"
+environment  = "dev"
+location     = "eastus"
+
+# ── Network ──────────────────────────────────────────────────────────────────
+vnet_address_space    = ["10.0.0.0/16"]
+gateway_subnet_prefix = "10.0.0.0/24"
+app_subnet_prefix     = "10.0.10.0/24"
+data_subnet_prefix    = "10.0.20.0/24"
+
+# ── Application Gateway ──────────────────────────────────────────────────────
+gateway_sku_name  = "Standard_v2"
+gateway_capacity  = 2
+health_check_path = "/"
+
+# ── Application tier ─────────────────────────────────────────────────────────
+# Required. Contents of your public key, e.g. `cat ~/.ssh/id_rsa.pub`.
+ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAA... you@example.com"
+
+admin_username         = "azureuser"
+app_vm_sku             = "Standard_B2s"
+app_instance_count     = 2
+app_min_instance_count = 2
+app_max_instance_count = 4
+
+# ── Data tier ────────────────────────────────────────────────────────────────
+postgres_version               = "16"
+postgres_sku_name              = "B_Standard_B1ms"
+postgres_storage_mb            = 32768
+postgres_admin_username        = "pgadmin"
+postgres_database_name         = "appdb"
+postgres_backup_retention_days = 7
+
+tags = {
+  Owner      = "platform-team"
+  CostCenter = "engineering"
+}
