@@ -10,33 +10,30 @@ environment  = "dev"
 location     = "eastus"
 
 # ── Network ──────────────────────────────────────────────────────────────────
-vnet_address_space    = ["10.0.0.0/16"]
-gateway_subnet_prefix = "10.0.0.0/24"
-app_subnet_prefix     = "10.0.10.0/24"
-data_subnet_prefix    = "10.0.20.0/24"
+vnet_address_space = ["10.0.0.0/16"]
+subnet_prefix      = "10.0.1.0/24"
 
-# ── Application Gateway ──────────────────────────────────────────────────────
-gateway_sku_name  = "Standard_v2"
-gateway_capacity  = 2
-health_check_path = "/"
+# When false, a NAT gateway is created for outbound access instead.
+assign_public_ip = true
 
-# ── Application tier ─────────────────────────────────────────────────────────
+app_port = 80
+# Narrow this to your office/VPN range.
+ingress_cidr = "0.0.0.0/0"
+
+# Leave false and use Azure Bastion or `az serial-console connect`.
+allow_ssh = false
+
+# ── Virtual machine ──────────────────────────────────────────────────────────
 # Required. Contents of your public key, e.g. `cat ~/.ssh/id_rsa.pub`.
 ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAA... you@example.com"
 
-admin_username         = "azureuser"
-app_vm_sku             = "Standard_B2s"
-app_instance_count     = 2
-app_min_instance_count = 2
-app_max_instance_count = 4
+vm_size         = "Standard_B2s"
+admin_username  = "azureuser"
+os_disk_type    = "StandardSSD_LRS"
+os_disk_size_gb = 30
 
-# ── Data tier ────────────────────────────────────────────────────────────────
-postgres_version               = "16"
-postgres_sku_name              = "B_Standard_B1ms"
-postgres_storage_mb            = 32768
-postgres_admin_username        = "pgadmin"
-postgres_database_name         = "appdb"
-postgres_backup_retention_days = 7
+# Zero means no data disk.
+data_disk_size_gb = 0
 
 tags = {
   Owner      = "platform-team"

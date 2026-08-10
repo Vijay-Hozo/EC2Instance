@@ -44,7 +44,7 @@ variable "tags" {
   default     = {}
 }
 
-# ── Network tier ─────────────────────────────────────────────────────────────
+# ── Network ──────────────────────────────────────────────────────────────────
 
 variable "vnet_address_space" {
   description = "Address space for the virtual network."
@@ -52,127 +52,132 @@ variable "vnet_address_space" {
   default     = ["10.0.0.0/16"]
 }
 
-variable "gateway_subnet_prefix" {
-  description = "Prefix for the Application Gateway subnet. Must be dedicated to the gateway."
+variable "subnet_prefix" {
+  description = "Prefix for the VM's subnet. Must sit inside vnet_address_space."
   type        = string
-  default     = "10.0.0.0/24"
+  default     = "10.0.1.0/24"
 }
 
-variable "app_subnet_prefix" {
-  description = "Prefix for the application tier subnet."
-  type        = string
-  default     = "10.0.10.0/24"
+variable "assign_public_ip" {
+  description = "Give the VM a public IP. When false, a NAT gateway provides outbound access instead — Azure is retiring default outbound access, so a VM with neither has no egress at all."
+  type        = bool
+  default     = true
 }
-
-variable "data_subnet_prefix" {
-  description = "Prefix for the data tier subnet. Delegated to PostgreSQL Flexible Server, so it cannot host anything else."
-  type        = string
-  default     = "10.0.20.0/24"
-}
-
-# ── Application Gateway (web tier) ───────────────────────────────────────────
-
-variable "gateway_sku_name" {
-  description = "Application Gateway SKU name."
-  type        = string
-  default     = "Standard_v2"
-}
-
-variable "gateway_capacity" {
-  description = "Application Gateway instance count. Ignored when autoscaling is configured."
-  type        = number
-  default     = 2
-}
-
-variable "health_check_path" {
-  description = "HTTP path the gateway probe requests."
-  type        = string
-  default     = "/"
-}
-
-# ── Application tier ─────────────────────────────────────────────────────────
 
 variable "app_port" {
-  description = "Port the application listens on behind the gateway."
+  description = "Port the VM serves traffic on."
   type        = number
   default     = 80
 }
 
-variable "admin_username" {
-  description = "Admin username on the application VMs."
+variable "ingress_cidr" {
+  description = "CIDR allowed to reach app_port. Narrow this — the default is the whole internet."
   type        = string
-  default     = "azureuser"
+  default     = "0.0.0.0/0"
 }
 
-variable "ssh_public_key" {
-  description = "SSH public key for the VM admin user, e.g. contents of ~/.ssh/id_rsa.pub. Required — password auth is disabled."
-  type        = string
+variable "allow_ssh" {
+  description = "Open port 22. Leave false and use Azure Bastion or the serial console instead."
+  type        = bool
+  default     = false
 }
 
-variable "app_vm_sku" {
-  description = "VM size for the application tier."
+variable "ssh_source_cidr" {
+  description = "CIDR allowed to reach port 22. Only used when allow_ssh is true. Never set this to 0.0.0.0/0."
+  type        = string
+  default     = "10.0.0.0/8"
+}
+
+# ── Virtual machine ──────────────────────────────────────────────────────────
+
+variable "vm_size" {
+  description = "VM size."
   type        = string
   default     = "Standard_B2s"
 }
 
-variable "app_instance_count" {
-  description = "Application instances to run under normal load."
-  type        = number
-  default     = 2
-}
-
-variable "app_min_instance_count" {
-  description = "Minimum instances the autoscale rule will scale down to."
-  type        = number
-  default     = 2
-}
-
-variable "app_max_instance_count" {
-  description = "Maximum instances the autoscale rule will scale up to."
-  type        = number
-  default     = 4
-}
-
-# ── Data tier ────────────────────────────────────────────────────────────────
-
-variable "postgres_version" {
-  description = "PostgreSQL major version."
+variable "admin_username" {
+  description = "Admin username. Azure rejects reserved names like 'admin' and 'root'."
   type        = string
-  default     = "16"
+  default     = "azureuser"
+
+  validation {
+    condition     = !contains(["admin", "administrator", "root", "test", "user", "guest"], lower(var.admin_username))
+    error_message = "admin_username cannot be a reserved Azure username (admin, administrator, root, test, user, guest)."
+  }
 }
 
-variable "postgres_sku_name" {
-  description = "Flexible Server compute SKU."
+variable "ssh_public_key" {
+  description = "SSH public key for the admin user, e.g. contents of ~/.ssh/id_rsa.pub. Required — password auth is disabled."
   type        = string
-  default     = "B_Standard_B1ms"
 }
 
-variable "postgres_storage_mb" {
-  description = "Storage in MB. Must be one of the sizes the service supports (32768, 65536, 131072, ...)."
+variable "image_publisher" {
+  description = "Marketplace image publisher."
+  type        = string
+  default     = "Canonical"
+}
+
+variable "image_offer" {
+  description = "Marketplace image offer."
+  type        = string
+  default     = "0001-com-ubuntu-server-jammy"
+}
+
+variable "image_sku" {
+  description = "Marketplace image SKU."
+  type        = string
+  default     = "22_04-lts-gen2"
+}
+
+variable "os_disk_type" {
+  description = "OS disk storage type."
+  type        = string
+  default     = "StandardSSD_LRS"
+
+  validation {
+    condition     = contains(["Standard_LRS", "StandardSSD_LRS", "Premium_LRS"], var.os_disk_type)
+    error_message = "os_disk_type must be Standard_LRS, StandardSSD_LRS or Premium_LRS."
+  }
+}
+
+variable "os_disk_size_gb" {
+  description = "OS disk size in GB. Must be at least as large as the image."
   type        = number
-  default     = 32768
+  default     = 30
 }
 
-variable "postgres_admin_username" {
-  description = "Server admin login. The password is generated and stored in Key Vault."
-  type        = string
-  default     = "pgadmin"
-}
-
-variable "postgres_database_name" {
-  description = "Name of the initial database."
-  type        = string
-  default     = "appdb"
-}
-
-variable "postgres_backup_retention_days" {
-  description = "Days of automated backups to retain (7-35)."
-  type        = number
-  default     = 7
-}
-
-variable "postgres_high_availability" {
-  description = "Enable zone-redundant high availability. Not supported on Burstable SKUs — pair with a General Purpose postgres_sku_name."
+variable "encryption_at_host_enabled" {
+  description = "Encrypt the temp disk and VM caches as well as the managed disks. Not supported on every VM size."
   type        = bool
   default     = false
+}
+
+variable "data_disk_size_gb" {
+  description = "Size of an attached data disk in GB. Zero creates no data disk."
+  type        = number
+  default     = 0
+}
+
+variable "data_disk_type" {
+  description = "Data disk storage type."
+  type        = string
+  default     = "StandardSSD_LRS"
+}
+
+variable "custom_data" {
+  description = "cloud-init script run on first boot. Replace with your own bootstrap."
+  type        = string
+  default     = <<-EOT
+    #cloud-config
+    package_update: true
+    packages:
+      - nginx
+    write_files:
+      - path: /var/www/html/index.html
+        content: |
+          <h1>Hello from Azure</h1>
+    runcmd:
+      - systemctl enable --now nginx
+  EOT
 }
